@@ -104,7 +104,7 @@ export default function Home() {
         </div>
 
         <p className="text-muted text-center mt-16" style={{ fontSize: '0.78rem' }}>
-          Los votos son secretos hasta que se ingresen el código de revelación 🔒
+          Los votos son secretos hasta que se ingrese el código de revelación 🔒
         </p>
       </div>
     </div>
