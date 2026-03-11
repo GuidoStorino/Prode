@@ -33,18 +33,24 @@ export const createRoom = async (events, revealCode) => {
   return roomCode
 }
 
-// Join a room (register a player)
+// Join a room (register a player) - idempotent, won't overwrite existing votes
 export const joinRoom = async (roomCode, userId, playerName) => {
   const roomRef = doc(db, 'rooms', roomCode)
   const roomSnap = await getDoc(roomRef)
   if (!roomSnap.exists()) throw new Error('Sala no encontrada')
 
-  await setDoc(doc(db, 'rooms', roomCode, 'players', userId), {
-    name: playerName,
-    joinedAt: serverTimestamp(),
-    votes: {},
-    hasVoted: false,
-  })
+  const playerRef = doc(db, 'rooms', roomCode, 'players', userId)
+  const playerSnap = await getDoc(playerRef)
+
+  // If player already exists (rejoining), don't overwrite their votes
+  if (!playerSnap.exists()) {
+    await setDoc(playerRef, {
+      name: playerName,
+      joinedAt: serverTimestamp(),
+      votes: {},
+      hasVoted: false,
+    })
+  }
 
   return roomSnap.data()
 }

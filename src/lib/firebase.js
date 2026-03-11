@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth, signInAnonymously } from 'firebase/auth'
+import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKZho8a1WKrSSn6VJKqkxOO9p7DPliWfI",
@@ -15,4 +15,7 @@ const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
 export const auth = getAuth(app)
 
-export const signInAnon = () => signInAnonymously(auth)
+export const signInAnon = async () => {
+  await setPersistence(auth, browserLocalPersistence)
+  return signInAnonymously(auth)
+}
