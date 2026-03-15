@@ -358,7 +358,9 @@ export default function Room() {
   const [currentUid, setCurrentUid] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('votar') // 'votar' | 'jugadores' | 'revelar'
-  const [hasVoted, setHasVoted] = useState(false)
+
+  // Derive hasVoted directly from players — no separate state to get out of sync
+  const hasVoted = !!(currentUid && players[currentUid]?.hasVoted)
 
   // Auth + subscribe
   useEffect(() => {
@@ -388,13 +390,6 @@ export default function Room() {
     })
   }, [roomCode])
 
-  // Track own vote state
-  useEffect(() => {
-    if (currentUid && players[currentUid]) {
-      setHasVoted(players[currentUid].hasVoted)
-    }
-  }, [players, currentUid])
-
   // Auto switch to results when revealed
   useEffect(() => {
     if (room?.revealed) setTab('resultados')
@@ -403,7 +398,6 @@ export default function Room() {
   const handleSubmitVotes = async (votes) => {
     try {
       await submitVotes(roomCode, currentUid, votes)
-      setHasVoted(true)
       showToast('¡Votos enviados! 🗳️', 'success')
     } catch (e) {
       showToast('Error al enviar votos', 'error')
