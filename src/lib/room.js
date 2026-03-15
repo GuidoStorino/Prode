@@ -87,14 +87,10 @@ export const addEventToRoom = async (roomCode, newEvent) => {
   const { events } = roomSnap.data()
   const updatedEvents = [...events, newEvent]
 
-  // Update events list
   await updateDoc(roomRef, { events: updatedEvents })
 
-  // For each player that already voted, check if they're missing this new event
-  // If so, reopen their voting (hasVoted = false) without touching existing votes
-  const playersSnap = await import('firebase/firestore').then(({ getDocs }) =>
-    getDocs(collection(db, 'rooms', roomCode, 'players'))
-  )
+  const { getDocs, deleteDoc } = await import('firebase/firestore')
+  const playersSnap = await getDocs(collection(db, 'rooms', roomCode, 'players'))
 
   const updates = []
   playersSnap.forEach(playerDoc => {
@@ -105,6 +101,12 @@ export const addEventToRoom = async (roomCode, newEvent) => {
   })
 
   await Promise.all(updates)
+}
+
+// Remove a player from the room
+export const removePlayer = async (roomCode, userId) => {
+  const { deleteDoc } = await import('firebase/firestore')
+  await deleteDoc(doc(db, 'rooms', roomCode, 'players', userId))
 }
 
 export const setCorrectAnswers = async (roomCode, correctAnswers) => {
