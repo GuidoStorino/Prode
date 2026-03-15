@@ -1,17 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { auth } from '../lib/firebase'
 import { signInAnon } from '../lib/firebase'
 import {
   listenRoom, listenPlayers, submitVotes,
-  tryReveal, setCorrectAnswers, joinRoom
+  tryReveal, setCorrectAnswers, joinRoom, addEventToRoom, removePlayer
 } from '../lib/room'
 import { useToast } from '../hooks/useToast'
 
-// ---- Subcomponents ----
+// ---- VotingPanel ----
 
-function VotingPanel({ events, onSubmit, disabled }) {
-  const [votes, setVotes] = useState({})
+function VotingPanel({ events, onSubmit, disabled, savedVotes = {} }) {
+  const [votes, setVotes] = useState(savedVotes)
+  const displayVotes = disabled ? savedVotes : votes
   const allVoted = events.every(e => votes[e.id])
 
   const pick = (eventId, option) => {
@@ -25,15 +26,18 @@ function VotingPanel({ events, onSubmit, disabled }) {
         <div className="card" key={ev.id} style={{ marginBottom: 12 }}>
           <div className="flex items-center justify-between mb-8">
             <span className="event-number">#{i + 1}</span>
-            {votes[ev.id] && <span className="badge badge-green">✓ Votado</span>}
+            {displayVotes[ev.id] && (
+              <span className="badge badge-green">✓ {disabled ? 'Tu voto' : 'Votado'}</span>
+            )}
           </div>
           <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: 12 }}>{ev.question}</div>
           {ev.options.map(opt => (
             <button
               key={opt}
-              className={`vote-option ${votes[ev.id] === opt ? 'selected' : ''}`}
+              className={`vote-option ${displayVotes[ev.id] === opt ? 'selected' : ''}`}
               onClick={() => pick(ev.id, opt)}
               disabled={disabled}
+              style={disabled ? { cursor: 'default', opacity: displayVotes[ev.id] === opt ? 1 : 0.4 } : {}}
             >
               <span className="vote-radio" />
               {opt}
@@ -56,9 +60,12 @@ function VotingPanel({ events, onSubmit, disabled }) {
   )
 }
 
-function PlayersPanel({ players, currentUid, revealed }) {
+// ---- PlayersPanel ----
+
+function PlayersPanel({ players, currentUid, onRemove }) {
   const list = Object.entries(players)
   const voted = list.filter(([, p]) => p.hasVoted).length
+  const [confirmRemove, setConfirmRemove] = useState(null)
 
   return (
     <div>
@@ -80,10 +87,39 @@ function PlayersPanel({ players, currentUid, revealed }) {
             <span className="player-name">
               {player.name} {uid === currentUid ? <span className="text-muted">(vos)</span> : ''}
             </span>
-            {player.hasVoted
-              ? <span className="badge badge-green">Votó ✓</span>
-              : <span className="badge badge-gray">Pendiente</span>
-            }
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {player.hasVoted
+                ? <span className="badge badge-green">Votó ✓</span>
+                : <span className="badge badge-gray">Pendiente</span>
+              }
+              {confirmRemove === uid ? (
+                <>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                    onClick={() => { onRemove(uid); setConfirmRemove(null) }}
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                    onClick={() => setConfirmRemove(null)}
+                  >
+                    ✕
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '4px 8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}
+                  onClick={() => setConfirmRemove(uid)}
+                  title="Eliminar jugador"
+                >
+                  🗑
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -91,10 +127,110 @@ function PlayersPanel({ players, currentUid, revealed }) {
   )
 }
 
-function RevealPanel({ onReveal }) {
+// ---- AddEventPanel ----
+
+function AddEventPanel({ roomCode, showToast }) {
+  const [open, setOpen] = useState(false)
+  const [question, setQuestion] = useState('')
+  const [optionInput, setOptionInput] = useState('')
+  const [options, setOptions] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const addOption = () => {
+    const opt = optionInput.trim()
+    if (!opt || options.includes(opt)) return
+    setOptions(prev => [...prev, opt])
+    setOptionInput('')
+  }
+
+  const handleAdd = async () => {
+    if (!question.trim() || options.length < 2) return
+    setLoading(true)
+    try {
+      const newEvent = { id: Date.now().toString(), question: question.trim(), options }
+      await addEventToRoom(roomCode, newEvent)
+      showToast('Evento agregado. Los jugadores que ya votaron deberán votar este nuevo evento.', 'success', 4000)
+      setQuestion('')
+      setOptions([])
+      setOptionInput('')
+      setOpen(false)
+    } catch (e) {
+      showToast(e.message || 'Error al agregar evento', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => setOpen(true)}>
+        + Agregar evento a la sala
+      </button>
+    )
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 16, border: '1px dashed var(--border)' }}>
+      <div className="card-title" style={{ fontSize: '1rem' }}>Nuevo evento</div>
+      <p className="text-muted mb-12" style={{ fontSize: '0.8rem' }}>
+        Los jugadores que ya votaron deberán votar este nuevo evento. Sus votos anteriores se conservan.
+      </p>
+
+      <div className="input-group">
+        <label>Pregunta</label>
+        <input
+          placeholder="Ej: ¿Quién mete el primer gol?"
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+        />
+      </div>
+
+      <div className="input-group">
+        <label>Opciones (mín. 2)</label>
+        <div className="flex gap-8">
+          <input
+            placeholder="Opción..."
+            value={optionInput}
+            onChange={e => setOptionInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addOption()}
+            style={{ flex: 1 }}
+          />
+          <button className="btn btn-secondary btn-sm" onClick={addOption} style={{ width: 'auto' }}>
+            + Add
+          </button>
+        </div>
+      </div>
+
+      {options.length > 0 && (
+        <div className="options-list" style={{ marginBottom: 12 }}>
+          {options.map(opt => (
+            <span className="option-tag" key={opt}>
+              {opt}
+              <button className="option-remove" onClick={() => setOptions(p => p.filter(o => o !== opt))}>✕</button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button className="btn btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
+        <button
+          className="btn btn-primary"
+          onClick={handleAdd}
+          disabled={!question.trim() || options.length < 2 || loading}
+        >
+          {loading ? <span className="spinner" /> : 'Agregar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---- RevealPanel ----
+
+function RevealPanel({ onReveal, showToast }) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
-  const { showToast, ToastComponent } = useToast()
 
   const handleReveal = async () => {
     if (!code.trim()) return
@@ -110,7 +246,6 @@ function RevealPanel({ onReveal }) {
 
   return (
     <div className="card">
-      {ToastComponent}
       <div className="card-title">🔓 Revelar votos</div>
       <p className="text-muted mb-16">
         Ingresá el código de revelación para mostrar todos los votos simultáneamente.
@@ -132,9 +267,10 @@ function RevealPanel({ onReveal }) {
   )
 }
 
+// ---- ResultsPanel ----
+
 function ResultsPanel({ room, players, currentUid, onSetCorrectAnswers }) {
-  const { events, correctAnswers = {}, revealed } = room
-  const [editingAnswers, setEditingAnswers] = useState(false)
+  const { events, correctAnswers = {} } = room
   const [answers, setAnswers] = useState(correctAnswers)
   const playerList = Object.entries(players)
 
@@ -157,7 +293,6 @@ function ResultsPanel({ room, players, currentUid, onSetCorrectAnswers }) {
         </h2>
       </div>
 
-      {/* Scoreboard */}
       {hasAnswers && (
         <div className="card mb-12">
           <div className="card-title">🏆 Scoreboard</div>
@@ -178,7 +313,6 @@ function ResultsPanel({ room, players, currentUid, onSetCorrectAnswers }) {
         </div>
       )}
 
-      {/* Set correct answers */}
       {!hasAnswers && (
         <div className="card mb-12">
           <div className="card-title">Cargar resultados reales</div>
@@ -213,7 +347,6 @@ function ResultsPanel({ room, players, currentUid, onSetCorrectAnswers }) {
         </div>
       )}
 
-      {/* All votes per event */}
       {events.map((ev, i) => (
         <div className="result-row" key={ev.id}>
           <div className="result-event-title">
@@ -256,10 +389,10 @@ export default function Room() {
   const [players, setPlayers] = useState({})
   const [currentUid, setCurrentUid] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('votar') // 'votar' | 'jugadores' | 'revelar'
-  const [hasVoted, setHasVoted] = useState(false)
+  const [tab, setTab] = useState('votar')
 
-  // Auth + subscribe
+  const hasVoted = !!(currentUid && players[currentUid]?.hasVoted)
+
   useEffect(() => {
     const init = async () => {
       let user = auth.currentUser
@@ -281,20 +414,12 @@ export default function Room() {
       return () => { unsubRoom(); unsubPlayers() }
     }
 
-    init().catch(e => {
+    init().catch(() => {
       showToast('Error al conectarse a la sala', 'error')
       setLoading(false)
     })
   }, [roomCode])
 
-  // Track own vote state
-  useEffect(() => {
-    if (currentUid && players[currentUid]) {
-      setHasVoted(players[currentUid].hasVoted)
-    }
-  }, [players, currentUid])
-
-  // Auto switch to results when revealed
   useEffect(() => {
     if (room?.revealed) setTab('resultados')
   }, [room?.revealed])
@@ -302,7 +427,6 @@ export default function Room() {
   const handleSubmitVotes = async (votes) => {
     try {
       await submitVotes(roomCode, currentUid, votes)
-      setHasVoted(true)
       showToast('¡Votos enviados! 🗳️', 'success')
     } catch (e) {
       showToast('Error al enviar votos', 'error')
@@ -320,6 +444,15 @@ export default function Room() {
       showToast('Resultados guardados ✓', 'success')
     } catch (e) {
       showToast('Error al guardar resultados', 'error')
+    }
+  }
+
+  const handleRemovePlayer = async (uid) => {
+    try {
+      await removePlayer(roomCode, uid)
+      showToast('Jugador eliminado', 'success')
+    } catch (e) {
+      showToast('Error al eliminar jugador', 'error')
     }
   }
 
@@ -346,15 +479,10 @@ export default function Room() {
     )
   }
 
-  const tabs = room.revealed
-    ? ['resultados']
-    : ['votar', 'jugadores', 'revelar']
-
   return (
     <div className="app">
       {ToastComponent}
 
-      {/* Header */}
       <div className="header">
         <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }} onClick={() => navigate('/')}>
           ← Salir
@@ -390,32 +518,47 @@ export default function Room() {
         )}
 
         {tab === 'votar' && !room.revealed && (
-          hasVoted
-            ? (
-              <div className="card text-center">
-                <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🔒</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', letterSpacing: '0.05em', color: 'var(--accent)', marginBottom: 8 }}>
+          hasVoted ? (
+            <div>
+              <div className="card text-center" style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: '2rem', marginBottom: 6 }}>🔒</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', letterSpacing: '0.05em', color: 'var(--accent)', marginBottom: 6 }}>
                   TUS VOTOS ESTÁN GUARDADOS
                 </div>
-                <p className="text-muted">
-                  Esperando que todos voten y que alguien ingrese el código de revelación.
+                <p className="text-muted" style={{ fontSize: '0.82rem' }}>
+                  Los demás no pueden ver tus votos hasta la revelación.
                 </p>
-                <div style={{ marginTop: 16 }}>
-                  <button className="btn btn-secondary" onClick={() => setTab('jugadores')}>
-                    Ver jugadores →
-                  </button>
-                </div>
               </div>
-            )
-            : <VotingPanel events={room.events} onSubmit={handleSubmitVotes} disabled={false} />
+              <VotingPanel
+                events={room.events}
+                onSubmit={handleSubmitVotes}
+                disabled={true}
+                savedVotes={players[currentUid]?.votes || {}}
+              />
+            </div>
+          ) : (
+            <VotingPanel
+              events={room.events}
+              onSubmit={handleSubmitVotes}
+              disabled={false}
+              savedVotes={players[currentUid]?.votes || {}}
+            />
+          )
         )}
 
         {tab === 'jugadores' && !room.revealed && (
-          <PlayersPanel players={players} currentUid={currentUid} />
+          <>
+            <PlayersPanel
+              players={players}
+              currentUid={currentUid}
+              onRemove={handleRemovePlayer}
+            />
+            <AddEventPanel roomCode={roomCode} showToast={showToast} />
+          </>
         )}
 
         {tab === 'revelar' && !room.revealed && (
-          <RevealPanel onReveal={handleReveal} />
+          <RevealPanel onReveal={handleReveal} showToast={showToast} />
         )}
 
         {room.revealed && (
