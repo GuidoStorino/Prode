@@ -55,12 +55,13 @@ export const joinRoom = async (roomCode, userId, playerName) => {
   return roomSnap.data()
 }
 
-// Submit votes for a player
-export const submitVotes = async (roomCode, userId, votes) => {
-  await updateDoc(doc(db, 'rooms', roomCode, 'players', userId), {
-    votes,
-    hasVoted: true,
-  })
+// Submit votes for a player - merges with existing votes to preserve previous ones
+export const submitVotes = async (roomCode, userId, newVotes) => {
+  const playerRef = doc(db, 'rooms', roomCode, 'players', userId)
+  const playerSnap = await getDoc(playerRef)
+  const existingVotes = playerSnap.exists() ? (playerSnap.data().votes || {}) : {}
+  const mergedVotes = { ...existingVotes, ...newVotes }
+  await updateDoc(playerRef, { votes: mergedVotes, hasVoted: true })
 }
 
 // Try to reveal the room
@@ -77,7 +78,35 @@ export const tryReveal = async (roomCode, inputCode) => {
   await updateDoc(roomRef, { revealed: true })
 }
 
-// Set correct answers (any player can do this after reveal)
+// Add a new event to an existing room, reopen voting only for players missing that event
+export const addEventToRoom = async (roomCode, newEvent) => {
+  const roomRef = doc(db, 'rooms', roomCode)
+  const roomSnap = await getDoc(roomRef)
+  if (!roomSnap.exists()) throw new Error('Sala no encontrada')
+
+  const { events } = roomSnap.data()
+  const updatedEvents = [...events, newEvent]
+
+  // Update events list
+  await updateDoc(roomRef, { events: updatedEvents })
+
+  // For each player that already voted, check if they're missing this new event
+  // If so, reopen their voting (hasVoted = false) without touching existing votes
+  const playersSnap = await import('firebase/firestore').then(({ getDocs }) =>
+    getDocs(collection(db, 'rooms', roomCode, 'players'))
+  )
+
+  const updates = []
+  playersSnap.forEach(playerDoc => {
+    const data = playerDoc.data()
+    if (data.hasVoted && !data.votes?.[newEvent.id]) {
+      updates.push(updateDoc(playerDoc.ref, { hasVoted: false }))
+    }
+  })
+
+  await Promise.all(updates)
+}
+
 export const setCorrectAnswers = async (roomCode, correctAnswers) => {
   await updateDoc(doc(db, 'rooms', roomCode), { correctAnswers })
 }
