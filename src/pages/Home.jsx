@@ -7,8 +7,7 @@ import { useToast } from '../hooks/useToast'
 export default function Home() {
   const navigate = useNavigate()
   const { showToast, ToastComponent } = useToast()
-
-  const [tab, setTab] = useState('join') // 'join' | 'create'
+  const [tab, setTab] = useState('join')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,7 +15,6 @@ export default function Home() {
   const handleJoin = async () => {
     if (!name.trim()) return showToast('Ingresá tu nombre', 'error')
     if (code.trim().length < 4) return showToast('Ingresá el código de sala', 'error')
-
     setLoading(true)
     try {
       const { user } = await signInAnon()
@@ -39,67 +37,43 @@ export default function Home() {
   return (
     <div className="app">
       {ToastComponent}
-
       <div className="page" style={{ justifyContent: 'center' }}>
         <div className="hero">
-          <div className="logo" style={{ fontSize: '1rem', marginBottom: 16 }}>
-            PRO<span>DE</span>
-          </div>
+          <div className="logo" style={{ fontSize: '1rem', marginBottom: 16 }}>PRO<span>DE</span></div>
           <h1 className="hero-title">
             <span className="accent">VOTA</span><br />
             <span className="accent2">EN</span> SECRETO
           </h1>
           <div className="stripe-accent"></div>
-          <p className="hero-sub" style={{ marginTop: 16 }}>
-            Creá o unite a una partida con tus amigos
-          </p>
+          <p className="hero-sub" style={{ marginTop: 16 }}>Creá o unite a una partida con tus amigos</p>
         </div>
 
         <div className="card" style={{ maxWidth: 400 }}>
           <div className="tab-bar">
-            <button className={`tab ${tab === 'join' ? 'active' : ''}`} onClick={() => setTab('join')}>
-              Unirse
-            </button>
-            <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>
-              Crear sala
-            </button>
+            <button className={`tab ${tab === 'join' ? 'active' : ''}`} onClick={() => setTab('join')}>Unirse</button>
+            <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>Crear sala</button>
           </div>
 
           <div className="input-group">
             <label>Tu nombre</label>
-            <input
-              placeholder="¿Cómo te llamás?"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (tab === 'join' ? handleJoin() : handleGoCreate())}
-              maxLength={20}
-            />
+            <input placeholder="¿Cómo te llamás?" value={name} onChange={e => setName(e.target.value)} maxLength={20}
+              onKeyDown={e => e.key === 'Enter' && (tab === 'join' ? handleJoin() : handleGoCreate())} />
           </div>
 
           {tab === 'join' && (
             <div className="input-group">
               <label>Código de sala</label>
-              <input
-                className="input-code"
-                placeholder="ABCD"
-                value={code}
+              <input className="input-code" placeholder="ABCD" value={code}
                 onChange={e => setCode(e.target.value.toUpperCase().slice(0, 4))}
-                onKeyDown={e => e.key === 'Enter' && handleJoin()}
-                maxLength={4}
-              />
+                onKeyDown={e => e.key === 'Enter' && handleJoin()} maxLength={4} />
             </div>
           )}
 
           <div style={{ marginTop: 8 }}>
-            {tab === 'join' ? (
-              <button className="btn btn-primary" onClick={handleJoin} disabled={loading}>
-                {loading ? <span className="spinner" /> : '→ Entrar a la sala'}
-              </button>
-            ) : (
-              <button className="btn btn-primary" onClick={handleGoCreate} disabled={loading}>
-                {loading ? <span className="spinner" /> : '→ Configurar partida'}
-              </button>
-            )}
+            {tab === 'join'
+              ? <button className="btn btn-primary" onClick={handleJoin} disabled={loading}>{loading ? <span className="spinner" /> : '→ Entrar a la sala'}</button>
+              : <button className="btn btn-primary" onClick={handleGoCreate} disabled={loading}>{loading ? <span className="spinner" /> : '→ Configurar partida'}</button>
+            }
           </div>
         </div>
 
