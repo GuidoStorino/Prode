@@ -115,32 +115,32 @@ export const WC2026_FIXTURES = [
   // ── 16AVOS DE FINAL ──
 
   // Domingo 28 de junio
-  { id: 'wc073', home: '2º Grupo A', away: '2º Grupo B', date: '2026-06-28', time: '16:00', group: 'R32', venue: 'Los Ángeles' },
+  { id: 'wc073', home: 'Sudáfrica', away: 'Canadá', date: '2026-06-28', time: '16:00', group: 'R32', venue: 'Los Ángeles' },
 
   // Lunes 29 de junio
-  { id: 'wc074', home: '1º Grupo E', away: '2º Grupo F', date: '2026-06-29', time: '14:00', group: 'R32', venue: 'Houston' },
-  { id: 'wc075', home: '1º Grupo E', away: '3º Grupo A/B/C/D/F', date: '2026-06-29', time: '17:30', group: 'R32', venue: 'Boston' },
-  { id: 'wc076', home: '1º Grupo F', away: '2º Grupo C', date: '2026-06-29', time: '22:00', group: 'R32', venue: 'Monterrey' },
+  { id: 'wc074', home: 'Brasil', away: 'Japón', date: '2026-06-29', time: '14:00', group: 'R32', venue: 'Houston' },
+  { id: 'wc075', home: 'Alemania', away: 'Paraguay', date: '2026-06-29', time: '17:30', group: 'R32', venue: 'Boston' },
+  { id: 'wc076', home: 'Holanda', away: 'Marruecos', date: '2026-06-29', time: '22:00', group: 'R32', venue: 'Monterrey' },
 
   // Martes 30 de junio
-  { id: 'wc077', home: '2º Grupo E', away: '2º Grupo I', date: '2026-06-30', time: '14:00', group: 'R32', venue: 'Dallas' },
-  { id: 'wc078', home: '1º Grupo I', away: '3º Grupo C/D/F/G/H', date: '2026-06-30', time: '18:00', group: 'R32', venue: 'Nueva York/Nueva Jersey' },
-  { id: 'wc079', home: '1º Grupo A', away: '3º Grupo C/E/F/H/I', date: '2026-06-30', time: '22:00', group: 'R32', venue: 'Estadio Ciudad de México' },
+  { id: 'wc077', home: 'Costa de Marfil', away: 'Noruega', date: '2026-06-30', time: '14:00', group: 'R32', venue: 'Dallas' },
+  { id: 'wc078', home: 'Francia', away: 'Suecia', date: '2026-06-30', time: '18:00', group: 'R32', venue: 'Nueva York/Nueva Jersey' },
+  { id: 'wc079', home: 'México', away: 'Ecuador', date: '2026-06-30', time: '22:00', group: 'R32', venue: 'Estadio Ciudad de México' },
 
   // Miércoles 1 de julio
-  { id: 'wc080', home: '1º Grupo L', away: '3º Grupo E/H/I/J/K', date: '2026-07-01', time: '13:00', group: 'R32', venue: 'Atlanta' },
-  { id: 'wc081', home: '1º Grupo G', away: '3º Grupo A/E/H/I/J', date: '2026-07-01', time: '17:00', group: 'R32', venue: 'Seattle' },
-  { id: 'wc082', home: '1º Grupo D', away: '3º Grupo B/E/F/I/J', date: '2026-07-01', time: '21:00', group: 'R32', venue: 'San Francisco' },
+  { id: 'wc080', home: 'Inglaterra', away: 'RD Congo', date: '2026-07-01', time: '13:00', group: 'R32', venue: 'Atlanta' },
+  { id: 'wc081', home: 'Bélgica', away: 'Senegal', date: '2026-07-01', time: '17:00', group: 'R32', venue: 'Seattle' },
+  { id: 'wc082', home: 'Estados Unidos', away: 'Bosnia', date: '2026-07-01', time: '21:00', group: 'R32', venue: 'San Francisco' },
 
   // Jueves 2 de julio
-  { id: 'wc083', home: '2º Grupo K', away: '2º Grupo L', date: '2026-07-02', time: '14:00', group: 'R32', venue: 'Toronto' },
-  { id: 'wc084', home: '1º Grupo H', away: '2º Grupo J', date: '2026-07-02', time: '17:00', group: 'R32', venue: 'Los Ángeles' },
-  { id: 'wc085', home: '1º Grupo B', away: '3º Grupo E/F/G/I/J', date: '2026-07-02', time: '21:00', group: 'R32', venue: 'Vancouver' },
+  { id: 'wc083', home: 'España', away: 'Austria', date: '2026-07-02', time: '16:00', group: 'R32', venue: 'Toronto' },
+  { id: 'wc084', home: 'Portugal', away: 'Croacia', date: '2026-07-02', time: '20:00', group: 'R32', venue: 'Los Ángeles' },
+  { id: 'wc085', home: 'Suiza', away: 'Argelia', date: '2026-07-02', time: '00:00', group: 'R32', venue: 'Vancouver' },
 
   // Viernes 3 de julio
-  { id: 'wc086', home: '2º Grupo D', away: '2º Grupo G', date: '2026-07-03', time: '15:00', group: 'R32', venue: 'Dallas' },
-  { id: 'wc087', home: '1º Grupo J', away: '2º Grupo H', date: '2026-07-03', time: '19:00', group: 'R32', venue: 'Miami' },
-  { id: 'wc088', home: '1º Grupo K', away: '3º Grupo D/E/I/J/L', date: '2026-07-03', time: '22:30', group: 'R32', venue: 'Kansas City' },
+  { id: 'wc086', home: 'Australia', away: 'Egipto', date: '2026-07-03', time: '15:00', group: 'R32', venue: 'Dallas' },
+  { id: 'wc087', home: 'Argentina', away: 'Cabo Verde', date: '2026-07-03', time: '19:00', group: 'R32', venue: 'Miami' },
+  { id: 'wc088', home: 'Colombia', away: 'Ghana', date: '2026-07-03', time: '22:30', group: 'R32', venue: 'Kansas City' },
 
   // ── OCTAVOS DE FINAL ──
 
